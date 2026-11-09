@@ -1,0 +1,84 @@
+/* Background */
+.stApp {
+    background-image: linear-gradient(rgba(5, 5, 10, 0.75), rgba(5, 5, 10, 0.85)), url('https://images.unsplash.com/photo-1497366216548-37526070297c?q=80&w=2000&auto=format&fit=crop') !important;
+    background-size: cover !important;
+    background-position: center !important;
+    background-attachment: fixed !important;
+    font-family: 'Inter', sans-serif;
+}
+[data-testid="stAppViewContainer"] { background: transparent !important; }
+[data-testid="stHeader"] { background: transparent !important; }
+#MainMenu { visibility: hidden !important; }
+footer { visibility: hidden !important; }
+
+/* 🔧 SIDEBAR LAYOUT FIX */
+[data-testid="stSidebar"] {
+    background: rgba(15, 15, 20, 0.6) !important;
+    backdrop-filter: blur(24px) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+[data-testid="stSidebarNav"] { display: none !important; }
+[data-testid="stSidebarUserContent"] {
+    padding-top: 1rem !important; /* Pushes logo up */
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+/* 🔧 MIDDLE LINKS FIX (Bigger, Spaced out) */
+[data-testid="stPageLink-NavLink"] {
+    padding: 14px 16px !important;
+    border-radius: 10px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.03);
+}
+[data-testid="stPageLink-NavLink"]:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+[data-testid="stPageLink-NavLink"] p {
+    font-size: 17px !important;
+    font-weight: 600 !important;
+}
+
+/* 🔧 PIN PROFILE TO BOTTOM */
+[data-testid="stSidebarUserContent"] > div:last-child {
+    margin-top: auto; /* Magic flexbox to push to bottom */
+    margin-bottom: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 20px;
+}
+
+/* GLASS CARDS */
+.glass-panel {
+    background: rgba(25, 25, 35, 0.4) !important;
+    backdrop-filter: blur(24px) saturate(150%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.15) !important;
+    border-radius: 16px !important;
+    padding: 24px !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5) !important;
+    margin-bottom: 15px !important;
+    color: white;
+}
+
+/* KPI Cards */
+.kpi-card {
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(24px) saturate(150%);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    color: white;
+    height: 160px;
+    justify-content: space-between;
+}
+.kpi-blue { background: linear-gradient(135deg, rgba(59, 130, 246, 0.25) 0%, rgba(20, 20, 30, 0.4) 100%); border-left: 3px solid #3b82f6; }
+.kpi-yellow { background: linear-gradient(135deg, rgba(234, 179, 8, 0.25) 0%, rgba(20, 20, 30, 0.4) 100%); border-left: 3px solid #eab308; }
+.kpi-green { background: linear-gradient(135deg, rgba(16, 185, 129, 0.25) 0%, rgba(20, 20, 30, 0.4) 100%); border-left: 3px solid #10b981; }
+.kpi-red { background: linear-gradient(135deg, rgba(239, 68, 68, 0.25) 0%, rgba(20, 20, 30, 0.4) 100%); border-left: 3px solid #ef4444; }
+.kpi-title { font-size: 15px; color: #eee; margin: 0; display: flex; align-items: center; gap: 8px; }
+.kpi-value { font-size: 48px; font-weight: 800; margin: 0; color: white; line-height: 1; }
+.kpi-trend { font-size: 13px; color: #10b981; margin: 0; }
+
+.js-plotly-plot .plotly .main-svg { background: transparent !important; }
