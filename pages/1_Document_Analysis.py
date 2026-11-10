@@ -7,17 +7,22 @@ from pypdf import PdfReader
 from groq import Groq
 from dotenv import load_dotenv
 
-project_path = r"C:\Users\mypcb\OneDrive\VERIQ"
-if project_path not in sys.path:
-    sys.path.insert(0, project_path)
+# 🔧 CLOUD PATH FIX: Dynamically find the root folder for imports
+root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if root_path not in sys.path:
+    sys.path.insert(0, root_path)
+
 from database.db import init_db, get_connection
 
 load_dotenv()
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-with open("styles/main.css") as f:
+# 🔧 CLOUD PATH FIX: Find CSS in the root folder
+css_file_path = os.path.join(root_path, "styles", "main.css")
+with open(css_file_path) as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
+# --- SIDEBAR ---
 with st.sidebar:
     st.markdown("""
     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 30px;">
@@ -41,18 +46,29 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
+# --- PAGE LOGIC ---
 def extract_text_from_pdf(uploaded_file):
     try:
-        reader = PdfReader(io.BytesIO(uploaded_file.read()))
-        return "".join([page.extract_text() or "" for page in reader.pages])
-    except Exception as e: return f"Error: {e}"
+        file_bytes = uploaded_file.read()
+        reader = PdfReader(io.BytesIO(file_bytes))
+        text = ""
+        for page in reader.pages:
+            text += page.extract_text() or ""
+        return text
+    except Exception as e:
+        return f"Error: {e}"
 
 def analyze_policy_text(policy_text):
     prompt = f"Extract core compliance rules as a JSON array of strings. Text: {policy_text[:15000]}"
     try:
-        response = client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model="qwen/qwen3.8-27b", temperature=0.1)
+        response = client.chat.completions.create(
+            messages=[{"role": "user", "content": prompt}],
+            model="qwen/qwen3.8-27b",
+            temperature=0.1,
+        )
         return response.choices[0].message.content
-    except Exception as e: return f"Error: {e}"
+    except Exception as e:
+        return f"Error: {e}"
 
 def save_policy_to_db(name, reqs):
     conn = get_connection()
@@ -65,16 +81,21 @@ init_db()
 st.markdown("<h1 style='color: white;'>📄 Document Analysis</h1>", unsafe_allow_html=True)
 st.write("Upload a policy PDF to extract compliance rules.")
 
-if "ai_result" not in st.session_state: st.session_state.ai_result = None
-if "file_name" not in st.session_state: st.session_state.file_name = None
+if "ai_result" not in st.session_state:
+    st.session_state.ai_result = None
+if "file_name" not in st.session_state:
+    st.session_state.file_name = None
 
 uploaded_file = st.file_uploader("Upload Policy PDF", type=["pdf"])
+
 if uploaded_file and st.button("Analyze Policy"):
-    if st.session_state.file_name != uploaded_file.name: st.session_state.ai_result = None
+    if st.session_state.file_name != uploaded_file.name:
+        st.session_state.ai_result = None
     with st.spinner("Extracting..."):
         text = extract_text_from_pdf(uploaded_file)
         raw_ai = analyze_policy_text(text)
-        st.session_state.ai_result = raw_ai.replace('```json', '').replace('```', '').strip()
+        clean_ai = raw_ai.replace('```json', '').replace('```', '').strip()
+        st.session_state.ai_result = clean_ai
         st.session_state.file_name = uploaded_file.name
 
 if st.session_state.ai_result:
@@ -82,5 +103,5 @@ if st.session_state.ai_result:
     st.json(st.session_state.ai_result)
     if st.button("💾 Save to Database"):
         save_policy_to_db(st.session_state.file_name, st.session_state.ai_result)
-        st.success("Saved! Go to Gap Detection.")
+        st.success("Saved successfully! Go to Gap Detection.")
         st.session_state.ai_result = None
