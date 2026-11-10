@@ -4,18 +4,12 @@ import os
 from dotenv import load_dotenv
 from hindsight_client import Hindsight
 
-# 🔧 CLOUD PATH FIX
 root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if root_path not in sys.path:
     sys.path.insert(0, root_path)
 
 load_dotenv()
-
-# --- HINDSIGHT SETUP ---
-hs_client = Hindsight(
-    base_url="https://api.hindsight.vectorize.io",
-    api_key=os.getenv("HINDSIGHT_API_KEY")
-)
+hs_client = Hindsight(base_url="https://api.hindsight.vectorize.io", api_key=os.getenv("HINDSIGHT_API_KEY"))
 hs_bank = os.getenv("HINDSIGHT_MEMORY_BANK", "veriq-abc-tech")
 
 def recall_from_hindsight(query):
@@ -23,20 +17,21 @@ def recall_from_hindsight(query):
         response = hs_client.recall(bank_id=hs_bank, query=query)
         results = []
         for mem in response.results[:3]:
-            results.append({
-                "content": getattr(mem, 'text', getattr(mem, 'content', 'No content')),
-                "similarity_score": getattr(mem, 'score', 0.0)
-            })
+            results.append({"content": getattr(mem, 'text', getattr(mem, 'content', 'No content')), "similarity_score": getattr(mem, 'score', 0.0)})
         return {"status": "success", "results": results}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+    except Exception as e: return {"status": "error", "message": str(e)}
 
-# 🔧 CLOUD PATH FIX
-css_file_path = os.path.join(root_path, "styles", "main.css")
-with open(css_file_path) as f:
-    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+# 🔧 BULLETPROOF CSS LOADER
+css_path_1 = os.path.join(root_path, "styles", "main.css")
+css_path_2 = os.path.join(root_path, "main.css")
+css_path = css_path_1 if os.path.exists(css_path_1) else css_path_2
 
-# --- SIDEBAR ---
+try:
+    with open(css_path) as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+except FileNotFoundError:
+    pass
+
 with st.sidebar:
     st.markdown("""
     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 30px;">
@@ -60,7 +55,6 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-# --- PAGE LOGIC ---
 st.markdown("""
 <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 30px;">
     <div style="background: #a855f7; padding: 10px 20px; border-radius: 12px; font-size: 24px; font-weight: 700; color: white;">W1</div>
@@ -77,14 +71,12 @@ query = st.text_input("Search for a finding (e.g., 'Employee access removal dela
 if st.button("🧠 Recall from Hindsight"):
     with st.spinner("Querying Hindsight memory..."):
         result = recall_from_hindsight(query)
-    
     if result['status'] == 'error':
         st.error(f"Hindsight error: {result['message']}")
     elif not result['results']:
         st.warning("🧠 No relevant memory found. Try saving a finding first.")
     else:
         st.success(f"Found {len(result['results'])} relevant memories!")
-        
         for i, mem in enumerate(result['results']):
             st.markdown(f"""
             <div class="glass-panel" style="margin-bottom: 15px;">
@@ -98,7 +90,6 @@ if st.button("🧠 Recall from Hindsight"):
             </div>
             """, unsafe_allow_html=True)
 
-# Timeline Mockup
 st.markdown("---")
 st.markdown("""
 <div class="glass-panel">
