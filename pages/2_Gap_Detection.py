@@ -8,7 +8,6 @@ from groq import Groq
 from pypdf import PdfReader
 from hindsight_client import Hindsight
 
-# 🔧 CLOUD PATH FIX
 root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if root_path not in sys.path:
     sys.path.insert(0, root_path)
@@ -18,26 +17,26 @@ from database.db import init_db, get_connection
 load_dotenv()
 groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-# --- HINDSIGHT SETUP ---
-hs_client = Hindsight(
-    base_url="https://api.hindsight.vectorize.io",
-    api_key=os.getenv("HINDSIGHT_API_KEY")
-)
+hs_client = Hindsight(base_url="https://api.hindsight.vectorize.io", api_key=os.getenv("HINDSIGHT_API_KEY"))
 hs_bank = os.getenv("HINDSIGHT_MEMORY_BANK", "veriq-abc-tech")
 
 def save_to_hindsight(text, metadata):
     try:
         hs_client.retain(bank_id=hs_bank, content=text, metadata=metadata)
         return {"status": "success"}
-    except Exception as e:
-        return {"status": "error", "message": str(e)}
+    except Exception as e: return {"status": "error", "message": str(e)}
 
-# 🔧 CLOUD PATH FIX
-css_file_path = os.path.join(root_path, "styles", "main.css")
-with open(css_file_path) as f:
-    st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+# 🔧 BULLETPROOF CSS LOADER
+css_path_1 = os.path.join(root_path, "styles", "main.css")
+css_path_2 = os.path.join(root_path, "main.css")
+css_path = css_path_1 if os.path.exists(css_path_1) else css_path_2
 
-# --- SIDEBAR ---
+try:
+    with open(css_path) as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+except FileNotFoundError:
+    pass
+
 with st.sidebar:
     st.markdown("""
     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 30px;">
@@ -61,29 +60,21 @@ with st.sidebar:
     </div>
     """, unsafe_allow_html=True)
 
-# --- PAGE LOGIC ---
 def extract_text_from_evidence(file):
     try:
         file_bytes = file.read()
         if file.name.endswith('.pdf'):
             reader = PdfReader(io.BytesIO(file_bytes))
             return "".join([page.extract_text() or "" for page in reader.pages])
-        else:
-            return file_bytes.decode("utf-8")
-    except Exception as e:
-        return f"Error extracting evidence: {e}"
+        else: return file_bytes.decode("utf-8")
+    except Exception as e: return f"Error extracting evidence: {e}"
 
 def detect_gap(rule, evidence):
     prompt = f"Rule: {rule}\nEvidence: {evidence}\nReturn JSON with 'status' (Compliant, Gap, Insufficient Evidence) and 'explanation'."
     try:
-        response = groq_client.chat.completions.create(
-            messages=[{"role": "user", "content": prompt}],
-            model="qwen/qwen3.8-27b",
-            temperature=0.1,
-        )
+        response = groq_client.chat.completions.create(messages=[{"role": "user", "content": prompt}], model="qwen/qwen3.8-27b", temperature=0.1)
         return response.choices[0].message.content
-    except Exception as e:
-        return f"Error: {e}"
+    except Exception as e: return f"Error: {e}"
 
 def get_all_policies():
     conn = get_connection()
@@ -122,7 +113,6 @@ else:
     
     if st.button("Run Gap Detection"):
         final_evidence = ""
-        
         if evidence_file is not None:
             final_evidence = extract_text_from_evidence(evidence_file)
             st.success(f"Successfully extracted {len(final_evidence)} characters from {evidence_file.name}")
@@ -132,27 +122,19 @@ else:
         if final_evidence:
             with st.spinner("AI is analyzing the gap..."):
                 gap_result = detect_gap(selected_rule, final_evidence)
-            
             try:
                 clean_gap = gap_result.replace('```json', '').replace('```', '').strip()
                 parsed_gap = json.loads(clean_gap)
-                st.session_state.current_finding = {
-                    "rule": selected_rule, "evidence": final_evidence,
-                    "result": clean_gap, "parsed": parsed_gap
-                }
-            except Exception as e:
-                st.error(f"Could not parse AI response: {clean_gap}")
+                st.session_state.current_finding = {"rule": selected_rule, "evidence": final_evidence, "result": clean_gap, "parsed": parsed_gap}
+            except Exception as e: st.error(f"Could not parse AI response: {clean_gap}")
         else:
             st.error("Please upload a file or paste evidence first.")
 
 if "current_finding" in st.session_state:
     finding = st.session_state.current_finding
-    if finding['parsed']['status'] == 'Compliant':
-        st.success(f"✅ Status: {finding['parsed']['status']}")
-    elif finding['parsed']['status'] == 'Gap':
-        st.error(f"❌ Status: {finding['parsed']['status']}")
-    else:
-        st.warning(f"⚠️ Status: {finding['parsed']['status']}")
+    if finding['parsed']['status'] == 'Compliant': st.success(f"✅ Status: {finding['parsed']['status']}")
+    elif finding['parsed']['status'] == 'Gap': st.error(f"❌ Status: {finding['parsed']['status']}")
+    else: st.warning(f"⚠️ Status: {finding['parsed']['status']}")
         
     st.write(f"**AI Explanation:** {finding['parsed']['explanation']}")
     
@@ -166,7 +148,5 @@ if "current_finding" in st.session_state:
             memory_text = f"Rule: {finding['rule']}\nEvidence: {finding['evidence']}\nResult: {finding['parsed']['status']}\nExplanation: {finding['parsed']['explanation']}"
             with st.spinner("Retaining memory..."):
                 res = save_to_hindsight(memory_text, {"status": finding['parsed']['status']})
-            if res['status'] == 'success':
-                st.success("🧠 Memory saved to Hindsight!")
-            else:
-                st.error(f"Hindsight error: {res['message']}")
+            if res['status'] == 'success': st.success("🧠 Memory saved to Hindsight!")
+            else: st.error(f"Hindsight error: {res['message']}")
