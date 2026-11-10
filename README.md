@@ -10,6 +10,9 @@ VERIQ is an AI Agent that combines LLM reasoning with **persistent memory**.
 2. **Detects Gaps:** Analyzes real-world evidence against those rules to find violations.
 3. **Remembers:** Uses **Hindsight Memory** to store verified findings. If a similar issue happens again in the future, VERIQ recalls the past case and helps the auditor identify recurring weaknesses.
 
+# ⚡ VERIQ: AI Compliance & Operations Audit Agent
+**🚀 Live Demo:** https://veriq-bootstrap-avttidtfpkvjmfpcjpi2pd.streamlit.app/
+
 ## 🏗️ Tech Stack
 - **Frontend:** Streamlit (Custom Glassmorphism UI)
 - **AI Engine:** Groq API (`qwen/qwen3.8-27b`)
