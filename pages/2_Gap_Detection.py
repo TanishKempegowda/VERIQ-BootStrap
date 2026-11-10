@@ -8,9 +8,11 @@ from groq import Groq
 from pypdf import PdfReader
 from hindsight_client import Hindsight
 
-project_path = r"C:\Users\mypcb\OneDrive\VERIQ"
-if project_path not in sys.path:
-    sys.path.insert(0, project_path)
+# 🔧 CLOUD PATH FIX
+root_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+if root_path not in sys.path:
+    sys.path.insert(0, root_path)
+
 from database.db import init_db, get_connection
 
 load_dotenv()
@@ -30,10 +32,12 @@ def save_to_hindsight(text, metadata):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-# --- GLOBAL UI ---
-with open("styles/main.css") as f:
+# 🔧 CLOUD PATH FIX
+css_file_path = os.path.join(root_path, "styles", "main.css")
+with open(css_file_path) as f:
     st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
+# --- SIDEBAR ---
 with st.sidebar:
     st.markdown("""
     <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 30px;">
@@ -64,7 +68,7 @@ def extract_text_from_evidence(file):
         if file.name.endswith('.pdf'):
             reader = PdfReader(io.BytesIO(file_bytes))
             return "".join([page.extract_text() or "" for page in reader.pages])
-        else: # Assume txt/md
+        else:
             return file_bytes.decode("utf-8")
     except Exception as e:
         return f"Error extracting evidence: {e}"
